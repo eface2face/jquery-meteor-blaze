@@ -9,26 +9,104 @@ module.exports = function(jQuery,underscore) {
     jQuery.fn.compile = function() {
         var renderers = {}
         this.each(function(index,obj) {
+	    //Get template name
             var name = obj.getAttribute('name');
+	    //Create references that will be called in the renderer function
             var HTML = jQuery.Meteor.HTML;
             var Blaze = jQuery.Meteor.Blaze;
             var Spacebars = jQuery.Meteor.Spacebars;
+	    //Compile JS
             var render = eval(jQuery.Meteor.SpacebarsCompiler.compile(obj.innerHTML, {isTemplate: true}));
+            //Add renderer function for template
             renderers[name] = render;
         });
         return renderers;
     };
 
-    jQuery.fn.blaze = function(renderer,data,helpers,events) {
+    jQuery.fn.blaze = function(renderer) {
         return this.each(function(index,obj) {
+		//Check if the template has been created already
+		if (obj.instance)
+			//Exception
+			throw new Exception("Template already instantiated for " + obj);
 		//Create template instance
 		obj.instance = new jQuery.Meteor.Blaze.Template(obj.id,renderer);
-		//Set event map
-		obj.instance.events(events);
-		//Set helpers
-		obj.instance.helpers(helpers);
-		//Render template
-		jQuery.Meteor.Blaze.renderWithData(obj.instance, data, obj);
+	});
+    };
+
+    //Render an instantiated template view
+    jQuery.fn.render = function(data,after) {
+	return this.each(function(index,obj) {
+		//Check that the template has been created already
+		if (!obj.instance)
+			//Exception
+			throw new Exception("Template not instantiated for " + obj);
+		//Render temmplate instance
+		jQuery.Meteor.Blaze.renderWithData(obj.instance, jQuery.extend({},jQuery(obj).data(),data), obj, after);
+	});
+    };
+
+    //Append helpers
+    jQuery.fn.helpers = function(key,val) {
+	return this.each(function(index,obj) {
+		//Check that the template has been created already
+		if (!obj.instance)
+			//Exception
+			throw new Exception("Template not instantiated for " + obj);
+		//Create helper map
+                var helper = {};
+		//Set hepler
+		helper[key] = val;
+		//Add helper
+		obj.instance.helpers(helper);
+	});
+    };
+
+    //Append reactive helpers
+    jQuery.fn.reactive = function(key,reactive) {
+	return this.each(function(index,obj) {
+		//Check that the template has been created already
+		if (!obj.instance)
+			//Exception
+			throw new Exception("Template not instantiated for " + obj);
+		//Create helper map
+                var helper = {};
+		//Set hepler
+		helper[key] = function () {
+			return reactive.get();
+		};
+		//Add helper
+		obj.instance.helpers(helper);
+	});
+    };
+
+    //Append include helpers
+    jQuery.fn.includes = function(key,renderer) {
+	return this.each(function(index,obj) {
+		//Check that the template has been created already
+		if (!obj.instance)
+			//Exception
+			throw new Exception("Template not instantiated for " + obj);
+		//Create helper map
+                var helper = {};
+		//Set functionhepler
+		helper[key] =  function () { 
+			var h={},k;
+			//Create new template
+			var include = new jQuery.Meteor.Blaze.Template(obj.id+"."+key,renderer);
+			//HACK! helpers are stored with " "+name
+			for (k in obj.instance.__helpers)
+				//Check if it starts with template name
+				if (k.indexOf(" "+key+".")==0)
+					//Add without prefix
+					h[k.substring(key.length+2)] = obj.instance.__helpers[k];
+			//Add helpers
+			include.helpers(h);
+			//Return template
+			return include;
+		}
+		//Add helper
+		obj.instance.helpers(helper);
 	});
     };
 };
@@ -8884,6 +8962,7 @@ module.exports = function(Meteor) {
   var IdMap = Meteor.IdMap;
   var OrderedDict = Meteor.OrderedDict;
   var Tracker = Meteor.Tracker;
+  var Random = Meteor.Random;
   var Minimongo;
   var MinimongoTest;
   var MinimongoError;
@@ -12730,6 +12809,7 @@ module.exports = function(Meteor) {
   var ReactiveVar = Meteor.ReactiveVar;
   var Package = {};
   Package.minimongo = Meteor.Minimongo;
+  Package.minimongo.LocalCollection = LocalCollection;
   var ObserveSequence;
 var warn = function () {
   if (ObserveSequence._suppressWarnings) {
@@ -13598,6 +13678,7 @@ ReactiveVar.prototype._numListeners = function() {
 
 },{}],17:[function(require,module,exports){
 module.exports = function(Meteor) {
+  var _ = Meteor.underscore;
   var HTML = Meteor.HTML;
   var HTMLTools = Meteor.HTMLTools;
   var BlazeTools = Meteor.BlazeTools;
@@ -14714,7 +14795,7 @@ var Blaze = Meteor.Blaze;
 var ObserveSequence = Meteor.ObserveSequence;
 var ReactiveVar = Meteor.ReactiveVar;
 var Template = Meteor.Template;
-
+Blaze.ReactiveVar = ReactiveVar;
 var Spacebars;
 var Handlebars = {};
 Handlebars.registerHelper = Blaze.registerHelper;
