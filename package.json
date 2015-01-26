@@ -1,6 +1,6 @@
 {
   "name": "jquery-meteor-blaze",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Meteor blaze templates plugin for jQuery",
   "main": "jquery-meteor-blaze.js",
   "scripts": {
