@@ -1,4 +1,4 @@
-# Meteor blaze templates plugin for jQuery 
+# jQuery Meteor blaze template plugin
 
 ## Introduction
 
@@ -10,16 +10,16 @@
 
 Compile the spacebars template and generate the JS renderer functions for each one
 
-****Returns****: `object`, renderer functions
+***Returns***: `object`, renderer functions
 
 
 #### blaze(renderer) 
 
 Instantiates a blaze template instance
 
-****Parameters****
+***Parameters***
 
-****renderer****: `function`, renderer function for the template
+***renderer***: `function`, renderer function for the template
 
 
 
@@ -27,11 +27,11 @@ Instantiates a blaze template instance
 
 Render an instantiated template view
 
-****Parameters****
+***Parameters***
 
-****data****: `object`, data object to render templete with
+***data***: `object`, data object to render templete with
 
-****after****: `object`, child node to insert the template after
+***after***: `object`, child node to insert the template after
 
 
 
@@ -39,11 +39,11 @@ Render an instantiated template view
 
 Add a function helper to an instantiated template
 
-****Parameters****
+***Parameters***
 
-****key****: `string`, helper name
+***key***: `string`, helper name
 
-****value****: `object | function`, helper
+***value***: `object | function`, helper
 
 
 
@@ -51,11 +51,11 @@ Add a function helper to an instantiated template
 
 Add a reactive var to an instantiated template
 
-****Parameters****
+***Parameters***
 
-****key****: `string`, helper name
+***key***: `string`, helper name
 
-****reactive****: `object | function`, reactive var, must be an instance of Meteor.ReactiveVar
+***reactive***: `object | function`, reactive var, must be an instance of Meteor.ReactiveVar
 
 
 
@@ -64,14 +64,14 @@ Add a reactive var to an instantiated template
 Set renderer functions for live included templates
 It will create a helper function that returns a template instance with the associated render function. As an extra, it will copy the child helpers, that is, if a template includes a "foo" template, any "foo.bar" helper defined, will be copied to the new child template and renamed to "bar".
 
-****Parameters****
+***Parameters***
 
-****key****: `string`, helper name
+***key***: `string`, helper name
 
-****renderer****: `function`, renderer function for the template
+***renderer***: `function`, renderer function for the template
 
 
-****Example****:
+***Example***:
 ```js
 <script type="text/spacebars" name="list">
 	List:<br>
