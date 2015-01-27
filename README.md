@@ -35,24 +35,41 @@ Render an instantiated template view
 
 
 
-### helpers() 
+### helpers(key, value) 
 
 Add a function helper to an instantiated template
 
+**Parameters**
+
+**key**: `string`, helper name
+
+**value**: `object | function`, helper
 
 
-### reactive() 
+
+### reactive(key, reactive) 
 
 Add a reactive var to an instantiated template
 
+**Parameters**
+
+**key**: `string`, helper name
+
+**reactive**: `object | function`, reactive var, must be an instance of Meteor.ReactiveVar
 
 
-### includes() 
+
+### includes(key, renderer) 
 
 Set renderer functions for live included templates
 It will create a helper function that returns a template instance with the associated render function. As an extra, it will copy the child helpers, that is, if a template includes a "foo" template, any "foo.bar" helper defined, will be copied to the new child template and renamed to "bar".
 
-**Returns**: , renderer functions
+**Parameters**
+
+**key**: `string`, helper name
+
+**renderer**: `function`, renderer function for the template
+
 
 **Example**:
 ```js

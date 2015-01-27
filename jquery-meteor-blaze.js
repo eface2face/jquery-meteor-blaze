@@ -62,8 +62,8 @@ module.exports = function(jQuery,underscore) {
     /**
      * Add a function helper to an instantiated template
      * @method helpers
-     * @params {string} key - helper name
-     * @params {object|function} value - helper
+     * @param {string} key - helper name
+     * @param {object|function} value - helper
      */
     jQuery.fn.helpers = function(key,val) {
 	return this.each(function(index,obj) {
@@ -83,8 +83,8 @@ module.exports = function(jQuery,underscore) {
     /**
      * Add a reactive var to an instantiated template
      * @method reactive
-     * @params {string} key - helper name
-     * @params {object|function} reactive - reactive var, must be an instance of Meteor.ReactiveVar
+     * @param {string} key - helper name
+     * @param {object|function} reactive - reactive var, must be an instance of Meteor.ReactiveVar
      */
     jQuery.fn.reactive = function(key,reactive) {
 	return this.each(function(index,obj) {
@@ -127,7 +127,8 @@ module.exports = function(jQuery,underscore) {
 		.render({..});
 	</script> 
      * @method includes
-     * @return renderer functions
+     * @param {string} key - helper name
+     * @param {function} renderer - renderer function for the template
      */
     jQuery.fn.includes = function(key,renderer) {
 	return this.each(function(index,obj) {
