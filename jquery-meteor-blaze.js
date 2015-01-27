@@ -5,7 +5,7 @@ module.exports = function(jQuery,underscore) {
     /**
      * Compile the spacebars template and generate the JS renderer functions for each one
      * @method spacebars
-     * @return renderer functions
+     * @return {object} renderer functions
      */
     jQuery.fn.spacebars = function() {
 	//Renderer functions
@@ -82,7 +82,7 @@ module.exports = function(jQuery,underscore) {
 
     /**
      * Add a reactive var to an instantiated template
-     * @method helpers
+     * @method reactive
      * @params {string} key - helper name
      * @params {object|function} reactive - reactive var, must be an instance of Meteor.ReactiveVar
      */

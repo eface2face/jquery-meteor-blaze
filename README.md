@@ -10,7 +10,7 @@
 
 Compile the spacebars template and generate the JS renderer functions for each one
 
-**Returns**: , renderer functions
+**Returns**: `object`, renderer functions
 
 
 ### blaze(renderer) 
@@ -41,7 +41,7 @@ Add a function helper to an instantiated template
 
 
 
-### helpers() 
+### reactive() 
 
 Add a reactive var to an instantiated template
 
