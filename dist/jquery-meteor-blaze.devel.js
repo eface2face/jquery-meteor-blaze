@@ -2,165 +2,170 @@
 require("jquery-meteor-blaze")($,_);
 
 },{"jquery-meteor-blaze":2}],2:[function(require,module,exports){
-module.exports = function(jQuery,underscore) {
-    //Create a new meteor cient andd append it to the jQuery object
-    jQuery.Meteor = require("meteor-client")(jQuery,underscore);
+module.exports = function(jQuery, underscore) {
+	//Create a new meteor cient andd append it to the jQuery object
+	jQuery.Meteor = require("meteor-client")(jQuery, underscore);
 
-    /**
-     * Compile the spacebars template and generate the JS renderer functions for each one
-     * @method spacebars
-     * @return renderer functions
-     */
-    jQuery.fn.spacebars = function() {
-	//Renderer functions
-        var renderers = {}
-        this.each(function(index,obj) {
-	    //Get template name
-            var name = obj.getAttribute('name');
-	    //Create references that will be called in the renderer function
-            var HTML = jQuery.Meteor.HTML;
-            var Blaze = jQuery.Meteor.Blaze;
-            var Spacebars = jQuery.Meteor.Spacebars;
-	    //Compile JS
-            var render = eval(jQuery.Meteor.SpacebarsCompiler.compile(obj.innerHTML, {isTemplate: true}));
-            //Add renderer function for template
-            renderers[name] = render;
-        });
-	//REturn all the renderer functionas
-        return renderers;
-    };
+	/**
+	 * Compile the spacebars template and generate the JS renderer functions for each one
+	 * @method spacebars
+	 * @return {object} renderer functions
+	 */
+	jQuery.fn.spacebars = function() {
+		//Renderer functions
+		var renderers = {}
+		this.each(function(index, obj) {
+			//Get template name
+			var name = obj.getAttribute('name');
+			//Create references that will be called in the renderer function
+			var HTML = jQuery.Meteor.HTML;
+			var Blaze = jQuery.Meteor.Blaze;
+			var Spacebars = jQuery.Meteor.Spacebars;
+			//Compile JS
+			var render = eval(jQuery.Meteor.SpacebarsCompiler.compile(obj.innerHTML, {
+				isTemplate: true
+			}));
+			//Add renderer function for template
+			renderers[name] = render;
+		});
+		//Return all the renderer functionas
+		return renderers;
+	};
 
-    /**
-     * Instantiates a blaze template instance 
-     * @method blaze
-     * @param {function} renderer - renderer function for the template
-     */
-    jQuery.fn.blaze = function(renderer) {
-        return this.each(function(index,obj) {
-		//Check if the template has been created already
-		if (obj.instance)
-			//Exception
-			throw new Exception("Template already instantiated for " + obj);
-		//Create template instance
-		obj.instance = new jQuery.Meteor.Blaze.Template(obj.id,renderer);
-	});
-    };
+	/**
+	 * Instantiates a blaze template instance
+	 * @method blaze
+	 * @param {function} renderer - renderer function for the template
+	 */
+	jQuery.fn.blaze = function(renderer) {
+		return this.each(function(index, obj) {
+			//Check if the template has been created already
+			if (obj.instance)
+				//Exception
+				throw new Exception("Template already instantiated for " + obj);
+			//Create template instance
+			obj.instance = new jQuery.Meteor.Blaze.Template(obj.id, renderer);
+		});
+	};
 
-    /**
-     * Render an instantiated template view
-     * @method render
-     * @param {object} [data] - data object to render templete with
-     * @param {object} [after] - child node to insert the template after
-     */
-    jQuery.fn.render = function(data,after) {
-	return this.each(function(index,obj) {
-		//Check that the template has been created already
-		if (!obj.instance)
-			//Exception
-			throw new Exception("Template not instantiated for " + obj);
-		//Render temmplate instance
-		jQuery.Meteor.Blaze.renderWithData(obj.instance, jQuery.extend({},jQuery(obj).data(),data), obj, after);
-	});
-    };
+	/**
+	 * Render an instantiated template view
+	 * @method render
+	 * @param {object} [data] - data object to render templete with
+	 * @param {object} [after] - child node to insert the template after
+	 */
+	jQuery.fn.render = function(data, after) {
+		return this.each(function(index, obj) {
+			//Check that the template has been created already
+			if (!obj.instance)
+				//Exception
+				throw new Exception("Template not instantiated for " + obj);
+			//Render temmplate instance
+			jQuery.Meteor.Blaze.renderWithData(obj.instance, jQuery.extend({}, jQuery(obj) .data(), data), obj, after);
+		});
+	};
 
-    /**
-     * Add a function helper to an instantiated template
-     * @method helpers
-     * @params {string} key - helper name
-     * @params {object|function} value - helper
-     */
-    jQuery.fn.helpers = function(key,val) {
-	return this.each(function(index,obj) {
-		//Check that the template has been created already
-		if (!obj.instance)
-			//Exception
-			throw new Exception("Template not instantiated for " + obj);
-		//Create helper map
-                var helper = {};
-		//Set hepler
-		helper[key] = val;
-		//Add helper
-		obj.instance.helpers(helper);
-	});
-    };
+	/**
+	 * Add a function helper to an instantiated template
+	 * @method helpers
+	 * @param {string} key - helper name
+	 * @param {object|function} value - helper
+	 */
+	jQuery.fn.helpers = function(key, val) {
+		return this.each(function(index, obj) {
+			//Check that the template has been created already
+			if (!obj.instance)
+				//Exception
+				throw new Exception("Template not instantiated for " + obj);
+			//Create helper map
+			var helper = {};
+			//Set hepler
+			helper[key] = val;
+			//Add helper
+			obj.instance.helpers(helper);
+		});
+	};
 
-    /**
-     * Add a reactive var to an instantiated template
-     * @method helpers
-     * @params {string} key - helper name
-     * @params {object|function} reactive - reactive var, must be an instance of Meteor.ReactiveVar
-     */
-    jQuery.fn.reactive = function(key,reactive) {
-	return this.each(function(index,obj) {
-		//Check that the template has been created already
-		if (!obj.instance)
-			//Exception
-			throw new Exception("Template not instantiated for " + obj);
-		//Create helper map
-                var helper = {};
-		//Set hepler
-		helper[key] = function () {
-			return reactive.get();
-		};
-		//Add helper
-		obj.instance.helpers(helper);
-	});
-    };
+	/**
+	 * Add a reactive var to an instantiated template
+	 * @method reactive
+	 * @param {string} key - helper name
+	 * @param {object|function} reactive - reactive var, must be an instance of Meteor.ReactiveVar
+	 */
+	jQuery.fn.reactive = function(key, reactive) {
+		return this.each(function(index, obj) {
+			//Check that the template has been created already
+			if (!obj.instance)
+				//Exception
+				throw new Exception("Template not instantiated for " + obj);
+			//Create helper map
+			var helper = {};
+			//Set hepler
+			helper[key] = function() {
+				//Return the reactive var
+				return reactive.get();
+			};
+			//Add helper
+			obj.instance.helpers(helper);
+		});
+	};
 
-    /**
-     * Set renderer functions for live included templates
-     * It will create a helper function that returns a template instance with the associated render function. As an extra, it will copy the child helpers, that is, if a template includes a "foo" template, any "foo.bar" helper defined, will be copied to the new child template and renamed to "bar".
-     * @example
-     * <script type="text/spacebars" name="list">
-    	List:<br>
-	{{#each items}}
-		{{> item }}
-        {{/each}}
-       </script>
-       <script type="text/spacebars" name="item">
-	{{ foo }} {{ name }} <br>
-       </script>
-       <script>
-	 var templates = $("script[type='text/spacebars']").spacebars();
+	/**
+	* Set renderer functions for live included templates
+	* It will create a helper function that returns a template instance with the associated render function.
+	* As an extra, it will copy the child helpers, that is, if a template includes a "foo" template, any "foo.bar" helper defined, will be copied to the new child template and renamed to "bar".
+	* @example
+	 <script type="text/spacebars" name="list">
+		List:<br>
+		{{#each items}}
+			{{> item }}
+		{{/each}}
+		</script>
+		<script type="text/spacebars" name="item">
+		{{ foo }} {{ name }} <br>
+		</script>
+		<script>
+		 var templates = $("script[type='text/spacebars']").spacebars();
 
-	 $(".list").blaze(templates['list'])
-		.includes('item',templates['item'])
-		.helper('item.foo', function() {
-			return 'bar';
-		})
-		.render({..});
-	</script> 
-     * @method includes
-     * @return renderer functions
-     */
-    jQuery.fn.includes = function(key,renderer) {
-	return this.each(function(index,obj) {
-		//Check that the template has been created already
-		if (!obj.instance)
-			//Exception
-			throw new Exception("Template not instantiated for " + obj);
-		//Create helper map
-                var helper = {};
-		//Set functionhepler
-		helper[key] =  function () { 
-			var h={},k;
-			//Create new template
-			var include = new jQuery.Meteor.Blaze.Template(obj.id+"."+key,renderer);
-			//HACK! helpers are stored with " "+name
-			for (k in obj.instance.__helpers)
-				//Check if it starts with template name
-				if (k.indexOf(" "+key+".")==0)
-					//Add without prefix
-					h[k.substring(key.length+2)] = obj.instance.__helpers[k];
-			//Add helpers
-			include.helpers(h);
-			//Return template
-			return include;
-		}
-		//Add helper
-		obj.instance.helpers(helper);
-	});
-    };
+		 $(".list").blaze(templates['list'])
+			.includes('item',templates['item'])
+			.helper('item.foo', function() {
+				return 'bar';
+			})
+			.render({..});
+	 </script> 
+	* @method includes
+	* @param {string} key - helper name
+	* @param {function} renderer - renderer function for the template
+	*/
+	jQuery.fn.includes = function(key, renderer) {
+		return this.each(function(index, obj) {
+			//Check that the template has been created already
+			if (!obj.instance)
+				//Exception
+				throw new Exception("Template not instantiated for " + obj);
+			//Create helper map
+			var helper = {};
+			//Set functionhepler
+			helper[key] = function() {
+					var h = {}, k;
+					//Create new template
+					var include = new jQuery.Meteor.Blaze.Template(obj.id + "." + key, renderer);
+					//HACK! helpers are stored with " "+name
+					for (k in obj.instance.__helpers)
+						//Check if it starts with template name
+						if (k.indexOf(" " + key + ".") == 0)
+							//Add without prefix
+							h[k.substring(key.length + 2)] = obj.instance.__helpers[k];
+					//Add helpers
+					include.helpers(h);
+					//Return template
+					return include;
+				};
+			//Add helper
+			obj.instance.helpers(helper);
+		});
+	};
 };
 
 },{"meteor-client":3}],3:[function(require,module,exports){
@@ -2327,9 +2332,13 @@ Blaze.View.prototype.autorun = function (f, _inViewScope) {
     throw new Error("Can't call View#autorun from a Tracker Computation; try calling it from the created or rendered callback");
   }
 
+  var templateInstanceFunc = Blaze.Template._currentTemplateInstanceFunc;
+
   var c = Tracker.autorun(function viewAutorun(c) {
     return Blaze._withCurrentView(_inViewScope || self, function () {
-      return f.call(self, c);
+      return Blaze.Template._withTemplateInstanceFunc(templateInstanceFunc, function () {
+        return f.call(self, c);
+      });
     });
   });
   self.onViewDestroyed(function () { c.stop(); });
@@ -2909,9 +2918,10 @@ Blaze._addEventMap = function (view, eventMap, thisInHandler) {
               return null;
             var handlerThis = thisInHandler || this;
             var handlerArgs = arguments;
-            return Blaze._withCurrentView(view, function () {
-              return handler.apply(handlerThis, handlerArgs);
-            });
+            return Blaze._withCurrentView(Blaze.getView(evt.currentTarget),
+              function () {
+                return handler.apply(handlerThis, handlerArgs);
+              });
           },
           range, function (r) {
             return r.parentRange;
@@ -3195,13 +3205,10 @@ Blaze.registerHelper = function (name, func) {
   Blaze._globalHelpers[name] = func;
 };
 
-
 var bindIfIsFunction = function (x, target) {
   if (typeof x !== 'function')
     return x;
-  return function () {
-    return x.apply(target, arguments);
-  };
+  return _.bind(x, target);
 };
 
 // If `x` is a function, binds the value of `this` for that function
@@ -3250,8 +3257,19 @@ var getTemplateHelper = Blaze._getTemplateHelper = function (template, name) {
   return null;
 };
 
-var wrapHelper = function (f) {
-  return Blaze._wrapCatchingExceptions(f, 'template helper');
+var wrapHelper = function (f, templateFunc) {
+  if (typeof f !== "function") {
+    return f;
+  }
+
+  return function () {
+    var self = this;
+    var args = arguments;
+
+    return Template._withTemplateInstanceFunc(templateFunc, function () {
+      return Blaze._wrapCatchingExceptions(f, 'template helper').apply(self, args);
+    });
+  };
 };
 
 // Looks up a name, like "foo" or "..", as a helper of the
@@ -3272,6 +3290,11 @@ Blaze.View.prototype.lookup = function (name, _options) {
   var template = this.template;
   var lookupTemplate = _options && _options.template;
   var helper;
+  var boundTmplInstance;
+
+  if (this.templateInstance) {
+    boundTmplInstance = _.bind(this.templateInstance, this);
+  }
 
   if (/^\./.test(name)) {
     // starts with a dot. must be a series of dots which maps to an
@@ -3283,12 +3306,13 @@ Blaze.View.prototype.lookup = function (name, _options) {
 
   } else if (template &&
              ((helper = getTemplateHelper(template, name)) != null)) {
-    return wrapHelper(bindDataContext(helper));
+    return wrapHelper(bindDataContext(helper), boundTmplInstance);
   } else if (lookupTemplate && (name in Blaze.Template) &&
              (Blaze.Template[name] instanceof Blaze.Template)) {
     return Blaze.Template[name];
   } else if (Blaze._globalHelpers[name] != null) {
-    return wrapHelper(bindDataContext(Blaze._globalHelpers[name]));
+    return wrapHelper(bindDataContext(Blaze._globalHelpers[name]),
+      boundTmplInstance);
   } else {
     return function () {
       var isCalledAsFunction = (arguments.length > 0);
@@ -3448,9 +3472,13 @@ Template.prototype._getCallbacks = function (which) {
 };
 
 var fireCallbacks = function (callbacks, template) {
-  for (var i = 0, N = callbacks.length; i < N; i++) {
-    callbacks[i].call(template);
-  }
+  Template._withTemplateInstanceFunc(
+    function () { return template; },
+    function () {
+      for (var i = 0, N = callbacks.length; i < N; i++) {
+        callbacks[i].call(template);
+      }
+    });
 };
 
 Template.prototype.constructView = function (contentFunc, elseFunc) {
@@ -3657,6 +3685,25 @@ Template.prototype.helpers = function (dict) {
     this.__helpers.set(k, dict[k]);
 };
 
+// Kind of like Blaze.currentView but for the template instance.
+// This is a function, not a value -- so that not all helpers
+// are implicitly dependent on the current template instance's `data` property,
+// which would make them dependenct on the data context of the template
+// inclusion.
+Template._currentTemplateInstanceFunc = null;
+
+Template._withTemplateInstanceFunc = function (templateInstanceFunc, func) {
+  if (typeof func !== 'function')
+    throw new Error("Expected function, got: " + func);
+  var oldTmplInstanceFunc = Template._currentTemplateInstanceFunc;
+  try {
+    Template._currentTemplateInstanceFunc = templateInstanceFunc;
+    return func();
+  } finally {
+    Template._currentTemplateInstanceFunc = oldTmplInstanceFunc;
+  }
+};
+
 /**
  * @summary Specify event handlers for this template.
  * @locus Client
@@ -3673,9 +3720,12 @@ Template.prototype.events = function (eventMap) {
         if (data == null)
           data = {};
         var args = Array.prototype.slice.call(arguments);
-        var tmplInstance = view.templateInstance();
-        args.splice(1, 0, tmplInstance);
-        return v.apply(data, args);
+        var tmplInstanceFunc = _.bind(view.templateInstance, view);
+        args.splice(1, 0, tmplInstanceFunc());
+
+        return Template._withTemplateInstanceFunc(tmplInstanceFunc, function () {
+          return v.apply(data, args);
+        });
       };
     })(k, eventMap[k]);
   }
@@ -3692,22 +3742,24 @@ Template.prototype.events = function (eventMap) {
  * @returns Blaze.TemplateInstance
  */
 Template.instance = function () {
-  var view = Blaze.currentView;
-
-  while (view && ! view.template)
-    view = view.parentView;
-
-  if (! view)
-    return null;
-
-  return view.templateInstance();
+  return Template._currentTemplateInstanceFunc
+    && Template._currentTemplateInstanceFunc();
 };
 
 // Note: Template.currentData() is documented to take zero arguments,
 // while Blaze.getData takes up to one.
 
 /**
- * @summary Returns the data context of the current helper, or the data context of the template that declares the current event handler or callback.  Establishes a reactive dependency on the result.
+ * @summary
+ *
+ * - Inside an `onCreated`, `onRendered`, or `onDestroyed` callback, returns
+ * the data context of the template.
+ * - Inside a helper, returns the data context of the DOM node where the helper
+ * was used.
+ * - Inside an event handler, returns the data context of the element that fired
+ * the event.
+ *
+ * Establishes a reactive dependency on the result.
  * @locus Client
  * @function
  */
@@ -9177,10 +9229,10 @@ LocalCollection.Cursor = function (collection, selector, options) {
   if (LocalCollection._selectorIsId(selector)) {
     // stash for fast path
     self._selectorId = selector;
-    self.matcher = new Minimongo.Matcher(selector, self);
+    self.matcher = new Minimongo.Matcher(selector);
   } else {
     self._selectorId = undefined;
-    self.matcher = new Minimongo.Matcher(selector, self);
+    self.matcher = new Minimongo.Matcher(selector);
     if (self.matcher.hasGeoQuery() || options.sort) {
       self.sorter = new Minimongo.Sorter(options.sort || [],
                                          { matcher: self.matcher });
@@ -9722,7 +9774,7 @@ LocalCollection.prototype.remove = function (selector, callback) {
     return result;
   }
 
-  var matcher = new Minimongo.Matcher(selector, self);
+  var matcher = new Minimongo.Matcher(selector);
   var remove = [];
   self._eachPossiblyMatchingDoc(selector, function (doc, id) {
     if (matcher.documentMatches(doc).result)
@@ -9778,7 +9830,7 @@ LocalCollection.prototype.update = function (selector, mod, options, callback) {
   }
   if (!options) options = {};
 
-  var matcher = new Minimongo.Matcher(selector, self);
+  var matcher = new Minimongo.Matcher(selector);
 
   // Save the original results of any query that we might need to
   // _recomputeResults on, because _modifyAndNotify will mutate the objects in
