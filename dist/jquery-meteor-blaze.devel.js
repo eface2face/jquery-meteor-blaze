@@ -116,13 +116,13 @@ module.exports = function(jQuery, underscore) {
 			//Create helper map
 			var helper = {};
 			//Check reactive var type
-			if (typeof reactive === 'ReactiveVar')
+			if (reactive instanceof jQuery.Meteor.ReactiveVar)
 				//Set hepler
 				helper[key] = function() {
 					//Return the reactive var
 					return reactive.get();
 				};
-			else if (typeof reactive === 'ReactiveObjectMap')
+			else if (reactive instanceof jQuery.Meteor.ReactiveObjectMap)
 				//Set hepler
 				helper[key] = function() {
 					//Return the reactive values as array
