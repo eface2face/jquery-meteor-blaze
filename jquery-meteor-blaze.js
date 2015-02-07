@@ -37,10 +37,25 @@ module.exports = function(jQuery, underscore) {
 		return this.each(function(index, obj) {
 			//Check if the template has been created already
 			if (obj.instance)
-				//Exception
-				throw new Exception("Template already instantiated for " + obj);
+				//Error
+				throw new Error("Template already instantiated for " + obj);
 			//Create template instance
 			obj.instance = new jQuery.Meteor.Blaze.Template(obj.id, renderer);
+			//Set created callback
+			obj.instance.onCreated(function(instance) {
+				//Triger event
+				jQuery(obj).trigger('create',instance);
+			});
+			//Set rendered callback
+			obj.instance.onRendered(function(instance) {
+				//Triger event
+				jQuery(obj).trigger('render',instance);
+			});
+			//Set destroyed callback
+			obj.instance.onDestroyed(function(instance) {
+				//Triger event
+				jQuery(obj).trigger('destroy',instance);
+			});
 		});
 	};
 
@@ -54,8 +69,8 @@ module.exports = function(jQuery, underscore) {
 		return this.each(function(index, obj) {
 			//Check that the template has been created already
 			if (!obj.instance)
-				//Exception
-				throw new Exception("Template not instantiated for " + obj);
+				//Error
+				throw new Error("Template not instantiated for " + obj);
 			//Render temmplate instance
 			jQuery.Meteor.Blaze.renderWithData(obj.instance, jQuery.extend({}, jQuery(obj) .data(), data), obj, after);
 		});
@@ -71,8 +86,8 @@ module.exports = function(jQuery, underscore) {
 		return this.each(function(index, obj) {
 			//Check that the template has been created already
 			if (!obj.instance)
-				//Exception
-				throw new Exception("Template not instantiated for " + obj);
+				//Error
+				throw new Error("Template not instantiated for " + obj);
 			//Create helper map
 			var helper = {};
 			//Set hepler
@@ -92,8 +107,8 @@ module.exports = function(jQuery, underscore) {
 		return this.each(function(index, obj) {
 			//Check that the template has been created already
 			if (!obj.instance)
-				//Exception
-				throw new Exception("Template not instantiated for " + obj);
+				//Error
+				throw new Error("Template not instantiated for " + obj);
 			//Create helper map
 			var helper = {};
 			//Set hepler
@@ -138,8 +153,8 @@ module.exports = function(jQuery, underscore) {
 		return this.each(function(index, obj) {
 			//Check that the template has been created already
 			if (!obj.instance)
-				//Exception
-				throw new Exception("Template not instantiated for " + obj);
+				//Error
+				throw new Error("Template not instantiated for " + obj);
 			//Create helper map
 			var helper = {};
 			//Set functionhepler
