@@ -9141,11 +9141,13 @@ module.exports = function(Meteor) {
   var Tracker = Meteor.Tracker;
   var LocalCollection = Meteor.LocalCollection;
   var ReactiveVar = Meteor.ReactiveVar;
+  var EJSON = Meteor.EJSON;
   var ObserveSequence;
 
   //Copied from minimongo package to remove dependency, as this code should go into a helper package
   var LocalCollection = {};
   var Package = {minimongo: {LocalCollection: LocalCollection}};
+
 
 // NB: used by livedata
 LocalCollection._idStringify = function (id) {
