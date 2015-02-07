@@ -111,11 +111,19 @@ module.exports = function(jQuery, underscore) {
 				throw new Error("Template not instantiated for " + obj);
 			//Create helper map
 			var helper = {};
-			//Set hepler
-			helper[key] = function() {
-				//Return the reactive var
-				return reactive.get();
-			};
+			//Check reactive var type
+			if (typeof reactive === 'ReactiveVar')
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive var
+					return reactive.get();
+				};
+			else if (typeof reactive === 'ReactiveObjectMap')
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive values as array
+					return reactive.values();
+				};
 			//Add helper
 			obj.instance.helpers(helper);
 		});

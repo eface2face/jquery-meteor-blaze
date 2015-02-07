@@ -115,11 +115,19 @@ module.exports = function(jQuery, underscore) {
 				throw new Error("Template not instantiated for " + obj);
 			//Create helper map
 			var helper = {};
-			//Set hepler
-			helper[key] = function() {
-				//Return the reactive var
-				return reactive.get();
-			};
+			//Check reactive var type
+			if (typeof reactive === 'ReactiveVar')
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive var
+					return reactive.get();
+				};
+			else if (typeof reactive === 'ReactiveObjectMap')
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive values as array
+					return reactive.values();
+				};
 			//Add helper
 			obj.instance.helpers(helper);
 		});
@@ -196,6 +204,7 @@ module.exports = function(jQuery,underscore) {
   require("meteor-htmljs")(Meteor);
   require("meteor-html-tools")(Meteor);
   require("meteor-reactive-var")(Meteor);
+  require("meteor-reactive-object-map")(Meteor);
   require("meteor-blaze")(Meteor,jQuery);
   require("meteor-blaze-tools")(Meteor);
   require("meteor-templating")(Meteor);
@@ -204,7 +213,7 @@ module.exports = function(jQuery,underscore) {
   return Meteor;
 };
 
-},{"meteor-base64":4,"meteor-blaze":6,"meteor-blaze-tools":5,"meteor-core":7,"meteor-ejson-safe":8,"meteor-html-tools":9,"meteor-htmljs":10,"meteor-id-map":11,"meteor-observe-sequence":12,"meteor-ordered-dict":13,"meteor-random-window-crypto":14,"meteor-reactive-var":15,"meteor-spacebars":17,"meteor-spacebars-compiler":16,"meteor-templating":18,"meteor-tracker":19}],4:[function(require,module,exports){
+},{"meteor-base64":4,"meteor-blaze":6,"meteor-blaze-tools":5,"meteor-core":7,"meteor-ejson-safe":8,"meteor-html-tools":9,"meteor-htmljs":10,"meteor-id-map":11,"meteor-observe-sequence":12,"meteor-ordered-dict":13,"meteor-random-window-crypto":14,"meteor-reactive-object-map":15,"meteor-reactive-var":16,"meteor-spacebars":18,"meteor-spacebars-compiler":17,"meteor-templating":19,"meteor-tracker":20}],4:[function(require,module,exports){
 module.exports=function(Meteor) {
   var Base64;
 // Base 64 encoding
@@ -10271,6 +10280,114 @@ Random.createWithSeeds = function () {
 
 },{}],15:[function(require,module,exports){
 module.exports = function(Meteor) {
+	var _ = Meteor.underscore;
+	var Tracker = Meteor.Tracker;
+	var ReactiveObjectMap;
+
+	/**
+	 * @class
+	 * @instanceName reactiveVar
+	 * @summary Constructor for a ReactiveObjectMap, which represents a reactive map of objects.
+	 * Creates an object composed of keys generated from the results of running each element of collection through iteratee. The corresponding value of each key is the last element responsible for generating the key. The iteratee function is bound to thisArg and invoked with three arguments; (value, index|key, collection).
+
+	collection (Array|Object|string): The collection to iterate over.
+	[iteratee=_.identity] (Function|Object|string): The function invoked per iteration. If a property name or object is provided it is used to create a ".property" or ".matches" style callback respectively.
+	[thisArg] (*): The this binding of iteratee.
+	 * @locus Client
+	 * @param {(Array|Object|string} collection The initial value to to iterate over
+	 * @param {Function|Object|string} [iteratee=_.identity] Optional. The function invoked per iteration. If a property name or object is provided it is used to create a ".property" or ".matches" style callback respectively.
+	 */
+	ReactiveObjectMap = function(collection, iteratee) {
+		if (!(this instanceof ReactiveObjectMap))
+		// called without `new`
+			return new ReactiveObjectMap(collection, iteratee);
+
+		this.map = _.indexBy(collection, iteratee);
+		this.dep = new Tracker.Dependency;
+	};
+
+	ReactiveObjectMap.prototype.get = function(key) {
+		if (Tracker.active)
+			this.dep.depend();
+
+		return this.map[key];
+	};
+
+	ReactiveObjectMap.prototype.set = function(key, value) {
+		var old = this.map[key];
+		this.map[key] = value;
+		if (old === value)
+			this.dep.changed();
+	};
+
+	ReactiveObjectMap.prototype.has = function(key) {
+		if (Tracker.active)
+			this.dep.depend();
+
+		return this.hasOwnProperty(key);
+	};
+
+	ReactiveObjectMap.prototype.clear = function(key, value) {
+		this.map = {};
+		this.dep.changed();
+	};
+
+	ReactiveObjectMap.prototype.delete = function(key, value) {
+		if (delete this.map[key])
+			this.dep.changed();
+	};
+
+
+	ReactiveObjectMap.prototype.setAttribute = function(key, attr, value) {
+		var old = this.map[key][attr];
+		this.map[key][attr] = value;
+		if (old === value)
+			this.dep.changed();
+	};
+
+	ReactiveObjectMap.prototype.getAttribute = function(key, attr) {
+		this.map[key][attr] = value;
+		this.dep.changed();
+	};
+
+	ReactiveObjectMap.prototype.keys = function() {
+		if (Tracker.active)
+			this.dep.depend();
+		return Object.keys(map);
+	};
+
+	ReactiveObjectMap.prototype.values = function() {
+		if (Tracker.active)
+			this.dep.depend();
+		return _.values(map);
+	};
+
+	ReactiveObjectMap.prototype.size = function() {
+		if (Tracker.active)
+			this.dep.depend();
+		return Object.keys(map).length;
+	};
+
+	ReactiveObjectMap.prototype.toString = function() {
+		return 'ReactiveObjectMap{' + this.get() + '}';
+	};
+
+	ReactiveObjectMap.prototype._numListeners = function() {
+		// Tests want to know.
+		// Accesses a private field of Tracker.Dependency.
+		var count = 0;
+		for (var id in this.dep._dependentsById)
+			count++;
+		return count;
+	};
+
+	Meteor.ReactiveObjectMap = ReactiveObjectMap;
+
+	module.exports = ReactiveObjectMap;
+};
+
+},{}],16:[function(require,module,exports){
+module.exports = function(Meteor) {
 var Tracker = Meteor.Tracker;
 var ReactiveVar;
 /*
@@ -10372,7 +10489,7 @@ ReactiveVar.prototype._numListeners = function() {
   Meteor.ReactiveVar = ReactiveVar;
 };
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var HTML = Meteor.HTML;
@@ -11483,7 +11600,7 @@ SpacebarsCompiler._beautify = function (code) {
   Meteor.SpacebarsCompiler = SpacebarsCompiler;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 module.exports = function(Meteor) {
 var HTML = Meteor.HTML;
 var Tracker = Meteor.Tracker;
@@ -11787,7 +11904,7 @@ Spacebars.TemplateWith = Blaze._TemplateWith;
   Meteor.Spacebars = Spacebars;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var Blaze = Meteor.Blaze;
@@ -11876,7 +11993,7 @@ Template.__body__.__instantiate = Template.body.renderToDocument;
   Meteor.Template = Template;
 };
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 module.exports = function(Meteor) {
   var Tracker;
 //////////////////////////////////////////////////
