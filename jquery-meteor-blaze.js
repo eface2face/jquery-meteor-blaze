@@ -42,19 +42,21 @@ module.exports = function(jQuery, underscore) {
 			//Create template instance
 			obj.instance = new jQuery.Meteor.Blaze.Template(obj.id, renderer);
 			//Set created callback
-			obj.instance.onCreated(function(instance) {
+			obj.instance.onCreated(function() {
 				//Triger event
-				jQuery(obj).trigger('create',instance);
+				jQuery(obj).trigger('create',obj.instance);
 			});
 			//Set rendered callback
-			obj.instance.onRendered(function(instance) {
+			obj.instance.onRendered(function() {
 				//Triger event
-				jQuery(obj).trigger('render',instance);
+				jQuery(obj).trigger('render',obj.instance);
 			});
 			//Set destroyed callback
-			obj.instance.onDestroyed(function(instance) {
+			obj.instance.onDestroyed(function() {
 				//Triger event
-				jQuery(obj).trigger('destroy',instance);
+				jQuery(obj).trigger('destroy',obj.instance);
+				//Clean instance from object
+				delete obj.instance;
 			});
 		});
 	};
