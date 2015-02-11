@@ -46,19 +46,21 @@ module.exports = function(jQuery, underscore) {
 			//Create template instance
 			obj.instance = new jQuery.Meteor.Blaze.Template(obj.id, renderer);
 			//Set created callback
-			obj.instance.onCreated(function(instance) {
+			obj.instance.onCreated(function() {
 				//Triger event
-				jQuery(obj).trigger('create',instance);
+				jQuery(obj).trigger('create',obj.instance);
 			});
 			//Set rendered callback
-			obj.instance.onRendered(function(instance) {
+			obj.instance.onRendered(function() {
 				//Triger event
-				jQuery(obj).trigger('render',instance);
+				jQuery(obj).trigger('render',obj.instance);
 			});
 			//Set destroyed callback
-			obj.instance.onDestroyed(function(instance) {
+			obj.instance.onDestroyed(function() {
 				//Triger event
-				jQuery(obj).trigger('destroy',instance);
+				jQuery(obj).trigger('destroy',obj.instance);
+				//Clean instance from object
+				delete obj.instance;
 			});
 		});
 	};
@@ -9200,6 +9202,30 @@ LocalCollection._idParse = function (id) {
   }
 };
 
+LocalCollection._makeChangedFields = function (newDoc, oldDoc) {
+  var fields = {};
+  LocalCollection._diffObjects(oldDoc, newDoc, {
+    leftOnly: function (key, value) {
+      fields[key] = undefined;
+    },
+    rightOnly: function (key, value) {
+      fields[key] = value;
+    },
+    both: function (key, leftValue, rightValue) {
+      if (!EJSON.equals(leftValue, rightValue))
+        fields[key] = rightValue;
+    }
+  });
+  return fields;
+};
+
+// Is this selector just shorthand for lookup by _id?
+LocalCollection._selectorIsId = function (selector) {
+  return (typeof selector === "string") ||
+    (typeof selector === "number") ||
+    selector instanceof LocalCollection._ObjectID;
+};
+
 // ordered: bool.
 // old_results and new_results: collections of documents.
 //    if ordered, they are arrays.
@@ -10287,7 +10313,7 @@ module.exports = function(Meteor) {
 	ReactiveObjectMap = function() {
 		if (!(this instanceof ReactiveObjectMap))
 		// called without `new`
-			return new ReactiveObjectMap(collection, iteratee);
+			return new ReactiveObjectMap();
 
 		this.map = {};
 		this.dep = new Tracker.Dependency;
@@ -10301,21 +10327,19 @@ module.exports = function(Meteor) {
 	ReactiveObjectMap.prototype.get = function(key) {
 		if (Tracker.active)
 			this.dep.depend();
-
 		return this.map[key];
 	};
 
 	ReactiveObjectMap.prototype.set = function(key, value) {
 		var old = this.map[key];
 		this.map[key] = value;
-		if (old === value)
+		if (old !== value)
 			this.dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.has = function(key) {
 		if (Tracker.active)
 			this.dep.depend();
-
 		return this.hasOwnProperty(key);
 	};
 
@@ -10333,31 +10357,50 @@ module.exports = function(Meteor) {
 	ReactiveObjectMap.prototype.setAttribute = function(key, attr, value) {
 		var old = this.map[key][attr];
 		this.map[key][attr] = value;
-		if (old === value)
+		if (old !== value)
 			this.dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.getAttribute = function(key, attr) {
-		this.map[key][attr] = value;
-		this.dep.changed();
+		if (Tracker.active)
+			this.dep.depend();
+		return this.map[key][attr];
 	};
 
 	ReactiveObjectMap.prototype.keys = function() {
 		if (Tracker.active)
 			this.dep.depend();
-		return Object.keys(map);
+		return Object.keys(this.map);
 	};
 
 	ReactiveObjectMap.prototype.values = function() {
 		if (Tracker.active)
 			this.dep.depend();
-		return _.values(map);
+		return _.values(this.map);
+	};
+
+	ReactiveObjectMap.prototype.filter = function(predicate) {
+		if (Tracker.active)
+			this.dep.depend();
+		return _.filter(this.map,predicate);
+	};
+
+	ReactiveObjectMap.prototype.sortBy = function(iteratee) {
+		if (Tracker.active)
+			this.dep.depend();
+		return _.sortBy(this.map,iteratee);
+	};
+
+	ReactiveObjectMap.prototype.map = function(iteratee) {
+		if (Tracker.active)
+			this.dep.depend();
+		return _.map(this.map,iteratee);
 	};
 
 	ReactiveObjectMap.prototype.size = function() {
 		if (Tracker.active)
 			this.dep.depend();
-		return Object.keys(map).length;
+		return Object.keys(this.map).length;
 	};
 
 	ReactiveObjectMap.prototype.toString = function() {
