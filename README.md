@@ -1,8 +1,25 @@
 # jQuery Meteor blaze template plugin
+This project uses the [Meteor client libraries](https://github.com/eface2face/meteor-client) and wraps them in a easy to use jQuery plugin.
 
-## Introduction
-
+## Install
+You can install it with npm
+```bash
+npm install jquery-meteor-blaze
+```
 ## Usage
+You can either use the node module
+```js
+require('jquery-meteor-blaze')($,_);
+```
+Or use the scripts under the *dist* directory
+```js
+    <script type="text/javascript" src="lodash.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="jquery-meteor-blaze.devel.js"></script>º
+```
+
+## Dependencies
+The plugin requires underscore or lodash.
 
 ## Methods
 
@@ -12,6 +29,20 @@ Compile the spacebars template and generate the JS renderer functions for each o
 
 ***Returns***: `object`, renderer functions
 
+***Example***:
+```js
+<script type="text/spacebars" name="list">
+        Below is the list of items:
+        <ol>
+        {{#each posts}}
+                <li><input type="checkbox">{{ title }}</li>
+        {{/each}}
+        </ol>
+</script>
+<script>
+	var templates   = $("script[type='text/spacebars']").spacebars();
+</script>
+```
 
 #### blaze(renderer) 
 
@@ -33,6 +64,15 @@ Render an instantiated template view
 
 ***after***: `object`, child node to insert the template after
 
+***Example***:
+```js
+<script>
+	 $("#list")
+                .blaze(templates['list'])
+		.render({"posts": [{title: "first"},{title: "second"}]);
+
+</script>
+```
 
 
 #### helpers(key, value) 
@@ -55,8 +95,19 @@ Add a reactive var to an instantiated template
 
 ***key***: `string`, helper name
 
-***reactive***: `object | function`, reactive var, must be an instance of Meteor.ReactiveVar
+***reactive***: `object | function`, reactive var, must be an instance of Meteor.ReactiveVar or Meteor.ReactiveObjectMap
 
+
+```js
+<script>
+	var posts = new $.Meteor.ReactiveVar([{title: "first"},{title: "second"}]);
+	$("#list")
+                .blaze(templates['list'])
+		.reactive('posts',posts)
+		.render();
+
+</script>
+```
 
 
 #### includes(key, renderer) 
