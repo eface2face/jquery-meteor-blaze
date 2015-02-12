@@ -15,7 +15,7 @@ Or use the scripts under the *dist* directory
 ```js
     <script type="text/javascript" src="lodash.js"></script>
     <script type="text/javascript" src="jquery.min.js"></script>
-    <script type="text/javascript" src="jquery-meteor-blaze.devel.js"></script>º
+    <script type="text/javascript" src="jquery-meteor-blaze.devel.js"></script>
 ```
 
 ## Dependencies
@@ -44,6 +44,8 @@ Compile the spacebars template and generate the JS renderer functions for each o
 </script>
 ```
 
+You can also pre-compile your templates to javascript with the [Spacebars compiler](https://github.com/eface2face/spacebars-compiler) and require them into your project.
+
 #### blaze(renderer) 
 
 Instantiates a blaze template instance
@@ -68,7 +70,7 @@ Render an instantiated template view
 ```js
 <script>
 	 $("#list")
-                .blaze(templates['list'])
+		.blaze(templates['list'])
 		.render({"posts": [{title: "first"},{title: "second"}]);
 
 </script>
@@ -102,7 +104,7 @@ Add a reactive var to an instantiated template
 <script>
 	var posts = new $.Meteor.ReactiveVar([{title: "first"},{title: "second"}]);
 	$("#list")
-                .blaze(templates['list'])
+		.blaze(templates['list'])
 		.reactive('posts',posts)
 		.render();
 
@@ -140,8 +142,8 @@ It will create a helper function that returns a template instance with the assoc
 		.includes('item',templates['item'])
 		.helper('item.foo', function() {
 			return 'bar';
-			})
-			.render({..});
+		})
+		.render({..});
 </script> 
 ```
 
