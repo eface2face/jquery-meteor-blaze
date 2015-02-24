@@ -1,1 +1,1 @@
-require("jquery-meteor-blaze")($,_);
+require("../jquery-meteor-blaze.js")($,_);

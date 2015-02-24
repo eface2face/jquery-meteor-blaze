@@ -1,7 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-require("jquery-meteor-blaze")($,_);
+require("../jquery-meteor-blaze.js")($,_);
 
-},{"jquery-meteor-blaze":2}],2:[function(require,module,exports){
+},{"../jquery-meteor-blaze.js":2}],2:[function(require,module,exports){
 module.exports = function(jQuery, underscore) {
 	//Create a new meteor cient andd append it to the jQuery object
 	jQuery.Meteor = require("meteor-client")(jQuery, underscore);
@@ -9202,30 +9202,6 @@ LocalCollection._idParse = function (id) {
   }
 };
 
-LocalCollection._makeChangedFields = function (newDoc, oldDoc) {
-  var fields = {};
-  LocalCollection._diffObjects(oldDoc, newDoc, {
-    leftOnly: function (key, value) {
-      fields[key] = undefined;
-    },
-    rightOnly: function (key, value) {
-      fields[key] = value;
-    },
-    both: function (key, leftValue, rightValue) {
-      if (!EJSON.equals(leftValue, rightValue))
-        fields[key] = rightValue;
-    }
-  });
-  return fields;
-};
-
-// Is this selector just shorthand for lookup by _id?
-LocalCollection._selectorIsId = function (selector) {
-  return (typeof selector === "string") ||
-    (typeof selector === "number") ||
-    selector instanceof LocalCollection._ObjectID;
-};
-
 // ordered: bool.
 // old_results and new_results: collections of documents.
 //    if ordered, they are arrays.
@@ -10313,7 +10289,7 @@ module.exports = function(Meteor) {
 	ReactiveObjectMap = function() {
 		if (!(this instanceof ReactiveObjectMap))
 		// called without `new`
-			return new ReactiveObjectMap();
+			return new ReactiveObjectMap(collection, iteratee);
 
 		this.map = {};
 		this.dep = new Tracker.Dependency;
@@ -10327,19 +10303,21 @@ module.exports = function(Meteor) {
 	ReactiveObjectMap.prototype.get = function(key) {
 		if (Tracker.active)
 			this.dep.depend();
+
 		return this.map[key];
 	};
 
 	ReactiveObjectMap.prototype.set = function(key, value) {
 		var old = this.map[key];
 		this.map[key] = value;
-		if (old !== value)
+		if (old === value)
 			this.dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.has = function(key) {
 		if (Tracker.active)
 			this.dep.depend();
+
 		return this.hasOwnProperty(key);
 	};
 
@@ -10357,14 +10335,13 @@ module.exports = function(Meteor) {
 	ReactiveObjectMap.prototype.setAttribute = function(key, attr, value) {
 		var old = this.map[key][attr];
 		this.map[key][attr] = value;
-		if (old !== value)
+		if (old === value)
 			this.dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.getAttribute = function(key, attr) {
-		if (Tracker.active)
-			this.dep.depend();
-		return this.map[key][attr];
+		this.map[key][attr] = value;
+		this.dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.keys = function() {
@@ -10377,24 +10354,6 @@ module.exports = function(Meteor) {
 		if (Tracker.active)
 			this.dep.depend();
 		return _.values(this.map);
-	};
-
-	ReactiveObjectMap.prototype.filter = function(predicate) {
-		if (Tracker.active)
-			this.dep.depend();
-		return _.filter(this.map,predicate);
-	};
-
-	ReactiveObjectMap.prototype.sortBy = function(iteratee) {
-		if (Tracker.active)
-			this.dep.depend();
-		return _.sortBy(this.map,iteratee);
-	};
-
-	ReactiveObjectMap.prototype.map = function(iteratee) {
-		if (Tracker.active)
-			this.dep.depend();
-		return _.map(this.map,iteratee);
 	};
 
 	ReactiveObjectMap.prototype.size = function() {
