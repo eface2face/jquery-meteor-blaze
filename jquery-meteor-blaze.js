@@ -169,19 +169,21 @@ module.exports = function(jQuery, underscore) {
 			var helper = {};
 			//Set functionhepler
 			helper[key] = function() {
-					var h = {}, k;
-					//Create new template
-					var include = new jQuery.Meteor.Blaze.Template(obj.id + "." + key, renderer);
-					//HACK! helpers are stored with " "+name
-					for (k in obj.instance.__helpers)
-						//Check if it starts with template name
-						if (k.indexOf(" " + key + ".") == 0)
-							//Add without prefix
-							h[k.substring(key.length + 2)] = obj.instance.__helpers[k];
-					//Add helpers
-					include.helpers(h);
-					//Return template
-					return include;
+					jquery.Meteor.Tracker.nonreactive(function() {
+						var h = {}, k;
+						//Create new template
+						var include = new jQuery.Meteor.Blaze.Template(obj.id + "." + key, renderer);
+						//HACK! helpers are stored with " "+name
+						for (k in obj.instance.__helpers)
+							//Check if it starts with template name
+							if (k.indexOf(" " + key + ".") == 0)
+								//Add without prefix
+								h[k.substring(key.length + 2)] = obj.instance.__helpers[k];
+						//Add helpers
+						include.helpers(h);
+						//Return template
+						return include;
+					});
 				};
 			//Add helper
 			obj.instance.helpers(helper);
