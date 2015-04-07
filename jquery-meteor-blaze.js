@@ -70,12 +70,8 @@ module.exports = function(jQuery, underscore) {
 		return this.each(function(index, obj) {
 			//Check if the template has been rendered already
 			if (obj.instance && obj.instance.view)
-			{
 				//Erase it
 				jQuery.Meteor.Blaze.remove(obj.instance.view);
-				//Delete it
-				delete obj.instance.view;
-			}
 			//Clean instance from object
 			delete obj.instance;
 		});
