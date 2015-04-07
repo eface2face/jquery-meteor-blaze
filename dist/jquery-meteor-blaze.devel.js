@@ -70,9 +70,13 @@ module.exports = function(jQuery, underscore) {
 	jQuery.fn.unblaze = function() {
 		return this.each(function(index, obj) {
 			//Check if the template has been rendered already
-			if (obj.instance.view)
+			if (obj.instance && obj.instance.view)
+			{
 				//Erase it
-				jquery.Meteor.Blaze.remove(obj.instance.view);
+				jQuery.Meteor.Blaze.remove(obj.instance.view);
+				//Delete it
+				delete obj.instance.view;
+			}
 			//Clean instance from object
 			delete obj.instance;
 		});
@@ -124,8 +128,27 @@ module.exports = function(jQuery, underscore) {
 	 */
 	jQuery.fn.reactive = function(key, reactive) {
 		return this.each(function(index, obj) {
-			//Delete template from object
-			delete obj.instance;
+			//Check that the template has been created already
+			if (!obj.instance)
+				//Error
+				throw new Error("Template not instantiated for " + obj);
+			//Create helper map
+			var helper = {};
+			//Check reactive var type
+			if (reactive instanceof jQuery.Meteor.ReactiveVar)
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive var
+					return reactive.get();
+				};
+			else if (reactive instanceof jQuery.Meteor.ReactiveObjectMap)
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive values as array
+					return reactive.values();
+				};
+			//Add helper
+			obj.instance.helpers(helper);
 		});
 	};
 
