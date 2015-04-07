@@ -69,9 +69,13 @@ module.exports = function(jQuery, underscore) {
 	jQuery.fn.unblaze = function() {
 		return this.each(function(index, obj) {
 			//Check if the template has been rendered already
-			if (obj.instance.view)
+			if (obj.instance && obj.instance.view)
+			{
 				//Erase it
-				jquery.Meteor.Blaze.remove(obj.instance.view);
+				jQuery.Meteor.Blaze.remove(obj.instance.view);
+				//Delete it
+				delete obj.instance.view;
+			}
 			//Clean instance from object
 			delete obj.instance;
 		});
