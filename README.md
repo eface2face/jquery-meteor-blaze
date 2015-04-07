@@ -54,6 +54,9 @@ Instantiates a blaze template instance
 
 ***renderer***: `function`, renderer function for the template
 
+#### unblaze() 
+
+Removes a blaze template instance
 
 
 #### render(data, after) 

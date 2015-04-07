@@ -62,6 +62,22 @@ module.exports = function(jQuery, underscore) {
 	};
 
 	/**
+	 * Terminate a blaze template instance withou removing the DOM object
+	 * @method blaze
+	 * @param {function} renderer - renderer function for the template
+	 */
+	jQuery.fn.unblaze = function() {
+		return this.each(function(index, obj) {
+			//Check if the template has been rendered already
+			if (obj.instance.view)
+				//Erase it
+				jquery.Meteor.Blaze.remove(obj.instance.view);
+			//Clean instance from object
+			delete obj.instance;
+		});
+	};
+
+	/**
 	 * Render an instantiated template view
 	 * @method render
 	 * @param {object} [data] - data object to render templete with
@@ -74,7 +90,7 @@ module.exports = function(jQuery, underscore) {
 				//Error
 				throw new Error("Template not instantiated for " + obj);
 			//Render temmplate instance
-			jQuery.Meteor.Blaze.renderWithData(obj.instance, jQuery.extend({}, jQuery(obj) .data(), data), obj, after);
+			obj.instance.view = jQuery.Meteor.Blaze.renderWithData(obj.instance, jQuery.extend({}, jQuery(obj) .data(), data), obj, after);
 		});
 	};
 
@@ -107,27 +123,8 @@ module.exports = function(jQuery, underscore) {
 	 */
 	jQuery.fn.reactive = function(key, reactive) {
 		return this.each(function(index, obj) {
-			//Check that the template has been created already
-			if (!obj.instance)
-				//Error
-				throw new Error("Template not instantiated for " + obj);
-			//Create helper map
-			var helper = {};
-			//Check reactive var type
-			if (reactive instanceof jQuery.Meteor.ReactiveVar)
-				//Set hepler
-				helper[key] = function() {
-					//Return the reactive var
-					return reactive.get();
-				};
-			else if (reactive instanceof jQuery.Meteor.ReactiveObjectMap)
-				//Set hepler
-				helper[key] = function() {
-					//Return the reactive values as array
-					return reactive.values();
-				};
-			//Add helper
-			obj.instance.helpers(helper);
+			//Delete template from object
+			delete obj.instance;
 		});
 	};
 
