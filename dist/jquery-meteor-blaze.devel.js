@@ -2086,7 +2086,8 @@ Blaze._DOMMaterializer.def({
       };
       var updaterComputation;
       if (self.parentView) {
-        updaterComputation = self.parentView.autorun(updateAttributes);
+        updaterComputation =
+          self.parentView.autorun(updateAttributes, undefined, 'updater');
       } else {
         updaterComputation = Tracker.nonreactive(function () {
           return Tracker.autorun(function () {
@@ -2341,7 +2342,7 @@ Blaze.View.prototype.onViewDestroyed = function (cb) {
 /// callback.  Autoruns that update the DOM should be started
 /// from either onViewCreated (guarded against the absence of
 /// view._domrange), or onViewReady.
-Blaze.View.prototype.autorun = function (f, _inViewScope) {
+Blaze.View.prototype.autorun = function (f, _inViewScope, displayName) {
   var self = this;
 
   // The restrictions on when View#autorun can be called are in order
@@ -2375,18 +2376,75 @@ Blaze.View.prototype.autorun = function (f, _inViewScope) {
     throw new Error("Can't call View#autorun from a Tracker Computation; try calling it from the created or rendered callback");
   }
 
-  var templateInstanceFunc = Blaze.Template._currentTemplateInstanceFunc;
+  // Each local variable allocate additional space on each frame of the
+  // execution stack. When too many variables are allocated on stack, you can
+  // run out of memory on stack running a deep recursion (which is typical for
+  // Blaze functions) and get stackoverlow error. (The size of the stack varies
+  // between browsers).
+  // The trick we use here is to allocate only one variable on stack `locals`
+  // that keeps references to all the rest. Since locals is allocated on heap,
+  // we don't take up any space on the stack.
+  var locals = {};
+  locals.templateInstanceFunc = Blaze.Template._currentTemplateInstanceFunc;
 
-  var c = Tracker.autorun(function viewAutorun(c) {
+  locals.f = function viewAutorun(c) {
     return Blaze._withCurrentView(_inViewScope || self, function () {
-      return Blaze.Template._withTemplateInstanceFunc(templateInstanceFunc, function () {
+      return Blaze.Template._withTemplateInstanceFunc(locals.templateInstanceFunc, function () {
         return f.call(self, c);
       });
     });
-  });
-  self.onViewDestroyed(function () { c.stop(); });
+  };
 
-  return c;
+  // Give the autorun function a better name for debugging and profiling.
+  // The `displayName` property is not part of the spec but browsers like Chrome
+  // and Firefox prefer it in debuggers over the name function was declared by.
+  locals.f.displayName =
+    (self.name || 'anonymous') + ':' + (displayName || 'anonymous');
+  locals.c = Tracker.autorun(locals.f);
+
+  self.onViewDestroyed(function () { locals.c.stop(); });
+
+  return locals.c;
+};
+
+Blaze.View.prototype._errorIfShouldntCallSubscribe = function () {
+  var self = this;
+
+  if (! self.isCreated) {
+    throw new Error("View#subscribe must be called from the created callback at the earliest");
+  }
+  if (self._isInRender) {
+    throw new Error("Can't call View#subscribe from inside render(); try calling it from the created or rendered callback");
+  }
+  if (self.isDestroyed) {
+    throw new Error("Can't call View#subscribe from inside the destroyed callback, try calling it inside created or rendered.");
+  }
+};
+
+/**
+ * Just like Blaze.View#autorun, but with Meteor.subscribe instead of
+ * Tracker.autorun. Stop the subscription when the view is destroyed.
+ * @return {SubscriptionHandle} A handle to the subscription so that you can
+ * see if it is ready, or stop it manually
+ */
+Blaze.View.prototype.subscribe = function (args, options) {
+  var self = this;
+  options = {} || options;
+
+  self._errorIfShouldntCallSubscribe();
+
+  var subHandle;
+  if (options.connection) {
+    subHandle = options.connection.subscribe.apply(options.connection, args);
+  } else {
+    subHandle = Meteor.subscribe.apply(Meteor, args);
+  }
+
+  self.onViewDestroyed(function () {
+    subHandle.stop();
+  });
+
+  return subHandle;
 };
 
 Blaze.View.prototype.firstNode = function () {
@@ -2466,7 +2524,7 @@ Blaze._materializeView = function (view, parentView) {
       Tracker.onInvalidate(function () {
         domrange.destroyMembers();
       });
-    });
+    }, undefined, ':materialize');
 
     var teardownHook = null;
 
@@ -3002,7 +3060,7 @@ Blaze.With = function (data, contentFunc) {
       // `data` is a reactive function
       view.autorun(function () {
         view.dataVar.set(data());
-      }, view.parentView);
+      }, view.parentView, 'setData');
     } else {
       view.dataVar.set(data);
     }
@@ -3030,7 +3088,7 @@ Blaze.If = function (conditionFunc, contentFunc, elseFunc, _not) {
     this.autorun(function () {
       var cond = Blaze._calculateCondition(conditionFunc());
       conditionVar.set(_not ? (! cond) : cond);
-    }, this.parentView);
+    }, this.parentView, 'condition');
   });
 
   return view;
@@ -3078,7 +3136,7 @@ Blaze.Each = function (argFunc, contentFunc, elseFunc) {
     // passing argFunc straight to ObserveSequence).
     eachView.autorun(function () {
       eachView.argVar.set(argFunc());
-    }, eachView.parentView);
+    }, eachView.parentView, 'collection');
 
     eachView.stopHandle = ObserveSequence.observe(function () {
       return eachView.argVar.get();
@@ -3673,6 +3731,16 @@ Blaze.TemplateInstance = function (view) {
    * @type {DOMNode}
    */
   this.lastNode = null;
+
+  // This dependency is used to identify state transitions in
+  // _subscriptionHandles which could cause the result of
+  // TemplateInstance#subscriptionsReady to change. Basically this is triggered
+  // whenever a new subscription handle is added or when a subscription handle
+  // is removed and they are not ready.
+  this._allSubsReadyDep = new Tracker.Dependency();
+  this._allSubsReady = false;
+
+  this._subscriptionHandles = {};
 };
 
 /**
@@ -3716,6 +3784,95 @@ Blaze.TemplateInstance.prototype.find = function (selector) {
  */
 Blaze.TemplateInstance.prototype.autorun = function (f) {
   return this.view.autorun(f);
+};
+
+/**
+ * @summary A version of [Meteor.subscribe](#meteor_subscribe) that is stopped
+ * when the template is destroyed.
+ * @return {SubscriptionHandle} The subscription handle to the newly made
+ * subscription. Call `handle.stop()` to manually stop the subscription, or
+ * `handle.ready()` to find out if this particular subscription has loaded all
+ * of its inital data.
+ * @locus Client
+ * @param {String} name Name of the subscription.  Matches the name of the
+ * server's `publish()` call.
+ * @param {Any} [arg1,arg2...] Optional arguments passed to publisher function
+ * on server.
+ * @param {Function|Object} [callbacks] Optional. May include `onError` and
+ * `onReady` callbacks. If a function is passed instead of an object, it is
+ * interpreted as an `onReady` callback.
+ */
+Blaze.TemplateInstance.prototype.subscribe = function (/* arguments */) {
+  var self = this;
+
+  var subHandles = self._subscriptionHandles;
+  var args = _.toArray(arguments);
+
+  // Duplicate logic from Meteor.subscribe
+  var callbacks = {};
+  if (args.length) {
+    var lastParam = _.last(args);
+    if (_.isFunction(lastParam)) {
+      callbacks.onReady = args.pop();
+    } else if (lastParam &&
+      // XXX COMPAT WITH 1.0.3.1 onError used to exist, but now we use
+      // onStop with an error callback instead.
+      _.any([lastParam.onReady, lastParam.onError, lastParam.onStop],
+        _.isFunction)) {
+      callbacks = args.pop();
+    }
+  }
+
+  var subHandle;
+  var oldStopped = callbacks.onStop;
+  callbacks.onStop = function (error) {
+    // When the subscription is stopped, remove it from the set of tracked
+    // subscriptions to avoid this list growing without bound
+    delete subHandles[subHandle.subscriptionId];
+
+    // Removing a subscription can only change the result of subscriptionsReady
+    // if we are not ready (that subscription could be the one blocking us being
+    // ready).
+    if (! self._allSubsReady) {
+      self._allSubsReadyDep.changed();
+    }
+
+    if (oldStopped) {
+      oldStopped(error);
+    }
+  };
+  args.push(callbacks);
+
+  subHandle = self.view.subscribe.call(self.view, args);
+
+  if (! _.has(subHandles, subHandle.subscriptionId)) {
+    subHandles[subHandle.subscriptionId] = subHandle;
+
+    // Adding a new subscription will always cause us to transition from ready
+    // to not ready, but if we are already not ready then this can't make us
+    // ready.
+    if (self._allSubsReady) {
+      self._allSubsReadyDep.changed();
+    }
+  }
+
+  return subHandle;
+};
+
+/**
+ * @summary A reactive function that returns true when all of the subscriptions
+ * called with [this.subscribe](#TemplateInstance-subscribe) are ready.
+ * @return {Boolean} True if all subscriptions on this template instance are
+ * ready.
+ */
+Blaze.TemplateInstance.prototype.subscriptionsReady = function () {
+  this._allSubsReadyDep.depend();
+
+  this._allSubsReady = _.all(this._subscriptionHandles, function (handle) {
+    return handle.ready();
+  });
+
+  return this._allSubsReady;
 };
 
 /**
@@ -3853,7 +4010,8 @@ Meteor = {
    * @static
    * @type {Boolean}
    */
-  isServer: false
+  isServer: false,
+  isCordova: false
 };
 
 if (typeof __meteor_runtime_config__ === 'object' &&
@@ -8290,6 +8448,8 @@ getContent = HTMLTools.Parse.getContent = function (scanner, shouldStopFunc) {
               attrs.value = textareaValue;
             }
           }
+        } else if (token.n === 'script') {
+          content = getRawText(scanner, token.n, shouldStopFunc);
         } else {
           content = getContent(scanner, shouldStopFunc);
         }
@@ -9218,6 +9378,30 @@ LocalCollection._idParse = function (id) {
   } else {
     return id;
   }
+};
+
+LocalCollection._makeChangedFields = function (newDoc, oldDoc) {
+  var fields = {};
+  LocalCollection._diffObjects(oldDoc, newDoc, {
+    leftOnly: function (key, value) {
+      fields[key] = undefined;
+    },
+    rightOnly: function (key, value) {
+      fields[key] = value;
+    },
+    both: function (key, leftValue, rightValue) {
+      if (!EJSON.equals(leftValue, rightValue))
+        fields[key] = rightValue;
+    }
+  });
+  return fields;
+};
+
+// Is this selector just shorthand for lookup by _id?
+LocalCollection._selectorIsId = function (selector) {
+  return (typeof selector === "string") ||
+    (typeof selector === "number") ||
+    selector instanceof LocalCollection._ObjectID;
 };
 
 // ordered: bool.
@@ -10307,77 +10491,94 @@ module.exports = function(Meteor) {
 	ReactiveObjectMap = function() {
 		if (!(this instanceof ReactiveObjectMap))
 		// called without `new`
-			return new ReactiveObjectMap(collection, iteratee);
+			return new ReactiveObjectMap();
 
-		this.map = {};
-		this.dep = new Tracker.Dependency;
+		this._map = {};
+		this._dep = new Tracker.Dependency;
 	};
 
 	ReactiveObjectMap.prototype.assign = function(collection, iteratee) {
-		this.map = _.indexBy(collection, iteratee);
-		this.dep.changed();
+		this._map = _.indexBy(collection, iteratee);
+		this._dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.get = function(key) {
 		if (Tracker.active)
-			this.dep.depend();
-
-		return this.map[key];
+			this._dep.depend();
+		return this._map[key];
 	};
 
 	ReactiveObjectMap.prototype.set = function(key, value) {
-		var old = this.map[key];
-		this.map[key] = value;
-		if (old === value)
-			this.dep.changed();
+		var old = this._map[key];
+		this._map[key] = value;
+		if (old !== value)
+			this._dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.has = function(key) {
 		if (Tracker.active)
-			this.dep.depend();
-
+			this._dep.depend();
 		return this.hasOwnProperty(key);
 	};
 
 	ReactiveObjectMap.prototype.clear = function(key, value) {
-		this.map = {};
-		this.dep.changed();
+		this._map = {};
+		this._dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.delete = function(key, value) {
-		if (delete this.map[key])
-			this.dep.changed();
+		if (delete this._map[key])
+			this._dep.changed();
 	};
 
 
 	ReactiveObjectMap.prototype.setAttribute = function(key, attr, value) {
-		var old = this.map[key][attr];
-		this.map[key][attr] = value;
-		if (old === value)
-			this.dep.changed();
+		var old = this._map[key][attr];
+		this._map[key][attr] = value;
+		if (old !== value)
+			this._dep.changed();
 	};
 
 	ReactiveObjectMap.prototype.getAttribute = function(key, attr) {
-		this.map[key][attr] = value;
-		this.dep.changed();
+		if (Tracker.active)
+			this._dep.depend();
+		return this._map[key][attr];
 	};
 
 	ReactiveObjectMap.prototype.keys = function() {
 		if (Tracker.active)
-			this.dep.depend();
-		return Object.keys(this.map);
+			this._dep.depend();
+		return Object.keys(this._map);
 	};
 
 	ReactiveObjectMap.prototype.values = function() {
 		if (Tracker.active)
-			this.dep.depend();
-		return _.values(this.map);
+			this._dep.depend();
+		return _.values(this._map);
+	};
+
+	ReactiveObjectMap.prototype.filter = function(predicate) {
+		if (Tracker.active)
+			this._dep.depend();
+		return _.filter(this._map,predicate);
+	};
+
+	ReactiveObjectMap.prototype.sortBy = function(iteratee) {
+		if (Tracker.active)
+			this._dep.depend();
+		return _.sortBy(this._map,iteratee);
+	};
+
+	ReactiveObjectMap.prototype.map = function(iteratee) {
+		if (Tracker.active)
+			this._dep.depend();
+		return _.map(this._map,iteratee);
 	};
 
 	ReactiveObjectMap.prototype.size = function() {
 		if (Tracker.active)
-			this.dep.depend();
-		return Object.keys(this.map).length;
+			this._dep.depend();
+		return Object.keys(this._map).length;
 	};
 
 	ReactiveObjectMap.prototype.toString = function() {
@@ -10388,7 +10589,7 @@ module.exports = function(Meteor) {
 		// Tests want to know.
 		// Accesses a private field of Tracker.Dependency.
 		var count = 0;
-		for (var id in this.dep._dependentsById)
+		for (var id in this._dep._dependentsById)
 			count++;
 		return count;
 	};
@@ -11173,7 +11374,7 @@ RawReplacingVisitor.def({
 });
 
 SpacebarsCompiler.optimize = function (tree) {
-  tree = (new OptimizingVisitor).visit(tree);
+  //tree = (new OptimizingVisitor).visit(tree);
   tree = (new RawCompactingVisitor).visit(tree);
   tree = (new RawReplacingVisitor).visit(tree);
   return tree;
@@ -11207,7 +11408,9 @@ var builtInTemplateMacros = {
   // Confusingly, this makes `{{> Template.dynamic}}` an alias
   // for `{{> __dynamic}}`, where "__dynamic" is the template that
   // implements the dynamic template feature.
-  'dynamic': 'Template.__dynamic'
+  'dynamic': 'Template.__dynamic',
+
+  'subscriptionsReady': 'view.templateInstance().subscriptionsReady()'
 };
 
 // A "reserved name" can't be used as a <template> name.  This
@@ -11247,7 +11450,8 @@ _.extend(CodeGen.prototype, {
           // Reactive attributes are already wrapped in a function,
           // and there's no fine-grained reactivity.
           // Anywhere else, we need to create a View.
-          code = 'Blaze.View(function () { return ' + code + '; })';
+          code = 'Blaze.View("lookup:' + tag.path.join('.') + '", ' +
+            'function () { return ' + code + '; })';
         }
         return BlazeTools.EmitCode(code);
       } else if (tag.type === 'INCLUSION' || tag.type === 'BLOCKOPEN') {
@@ -12008,9 +12212,9 @@ Template.__body__.__instantiate = Template.body.renderToDocument;
 },{}],20:[function(require,module,exports){
 module.exports = function(Meteor) {
   var Tracker;
-//////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 // Package docs at http://docs.meteor.com/#tracker //
-//////////////////////////////////////////////////
+/////////////////////////////////////////////////////
 
 /**
  * @namespace Tracker
@@ -12035,6 +12239,13 @@ Tracker.active = false;
  * @type {Tracker.Computation}
  */
 Tracker.currentComputation = null;
+
+// References to all computations created within the Tracker by id.
+// Keeping these references on an underscore property gives more control to
+// tooling and packages extending Tracker without increasing the API surface.
+// These can used to monkey-patch computations, their functions, use
+// computation ids for tracking, etc.
+Tracker._computations = {};
 
 var setCurrentComputation = function (c) {
   Tracker.currentComputation = c;
@@ -12114,7 +12325,11 @@ var afterFlushCallbacks = [];
 
 var requireFlush = function () {
   if (! willFlush) {
-    setTimeout(Tracker.flush, 0);
+    // We want this code to work without Meteor, see debugFunc above
+    if (typeof Meteor !== "undefined")
+      Meteor._setImmediate(Tracker.flush);
+    else
+      setTimeout(Tracker.flush, 0);
     willFlush = true;
   }
 };
@@ -12185,6 +12400,9 @@ Tracker.Computation = function (f, parent) {
   self._parent = parent;
   self._func = f;
   self._recomputing = false;
+
+  // Register the computation within the global Tracker.
+  Tracker._computations[self._id] = self;
 
   var errored = true;
   try {
@@ -12258,6 +12476,8 @@ Tracker.Computation.prototype.stop = function () {
   if (! this.stopped) {
     this.stopped = true;
     this.invalidate();
+    // Unregister from global Tracker.
+    delete Tracker._computations[this._id];
   }
 };
 
