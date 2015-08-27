@@ -142,6 +142,21 @@ module.exports = function(jQuery, underscore) {
 					//Return the reactive values as array
 					return reactive.values();
 				};
+			else if (reactive.values)
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive values as array
+					return reactive.values();
+				};
+			else if (reactive.get)
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive var
+					return reactive.get();
+				};
+			else
+				//Error
+				throw new Error("Unknown reactive type, neither jQuery.Meteor.ReactiveVar nor jQuery.Meteor.ReactiveObjectMap, and doesn't have values() nor get());
 			//Add helper
 			obj.instance.helpers(helper);
 		});
