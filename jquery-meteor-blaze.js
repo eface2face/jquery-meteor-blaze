@@ -156,7 +156,7 @@ module.exports = function(jQuery, underscore) {
 				};
 			else
 				//Error
-				throw new Error("Unknown reactive type, neither jQuery.Meteor.ReactiveVar nor jQuery.Meteor.ReactiveObjectMap, and doesn't have values() nor get());
+				throw new Error("Unknown reactive type, neither jQuery.Meteor.ReactiveVar nor jQuery.Meteor.ReactiveObjectMap, and doesn't have values() nor get()");
 			//Add helper
 			obj.instance.helpers(helper);
 		});
