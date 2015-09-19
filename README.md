@@ -74,7 +74,7 @@ Render an instantiated template view
 <script>
 	 $("#list")
 		.blaze(templates['list'])
-		.render({"posts": [{title: "first"},{title: "second"}]);
+		.render({"posts": [{title: "first"},{title: "second"}]});
 
 </script>
 ```
