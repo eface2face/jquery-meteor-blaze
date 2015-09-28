@@ -18,5 +18,8 @@
   "homepage": "https://github.com/eface2face/jquery-meteor-blaze",
   "dependencies": {
     "meteor-client": "^1.2.0"
+  },
+  "devDependencies": {
+    "browserify": "^11.2.0"
   }
 }
