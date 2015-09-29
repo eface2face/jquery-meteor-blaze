@@ -18,6 +18,12 @@ Or use the scripts under the *dist* directory
     <script type="text/javascript" src="jquery-meteor-blaze.devel.js"></script>
 ```
 
+## To Build Files
+```
+  $ npm install
+  $ npm run build
+```
+
 ## Dependencies
 The plugin requires underscore or lodash.
 
