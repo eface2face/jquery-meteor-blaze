@@ -1,7 +1,4 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-require("../jquery-meteor-blaze.js")($,_);
-
-},{"../jquery-meteor-blaze.js":2}],2:[function(require,module,exports){
 module.exports = function(jQuery, underscore) {
 	//Create a new meteor cient andd append it to the jQuery object
 	jQuery.Meteor = require("meteor-client")(jQuery, underscore);
@@ -146,17 +143,17 @@ module.exports = function(jQuery, underscore) {
 					//Return the reactive values as array
 					return reactive.values();
 				};
-			else if (reactive.values)
-				//Set hepler
-				helper[key] = function() {
-					//Return the reactive values as array
-					return reactive.values();
-				};
 			else if (reactive.get)
 				//Set hepler
 				helper[key] = function() {
 					//Return the reactive var
 					return reactive.get();
+				};
+			else if (reactive.values)
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive values as array
+					return reactive.values();
 				};
 			else
 				//Error
@@ -226,7 +223,7 @@ module.exports = function(jQuery, underscore) {
 	};
 };
 
-},{"meteor-client":3}],3:[function(require,module,exports){
+},{"meteor-client":2}],2:[function(require,module,exports){
 module.exports = function(jQuery,underscore) {
   var Meteor = require("meteor-core")(underscore);
   require("meteor-base64")(Meteor);
@@ -248,7 +245,7 @@ module.exports = function(jQuery,underscore) {
   return Meteor;
 };
 
-},{"meteor-base64":4,"meteor-blaze":6,"meteor-blaze-tools":5,"meteor-core":7,"meteor-ejson-safe":8,"meteor-html-tools":9,"meteor-htmljs":10,"meteor-id-map":11,"meteor-observe-sequence":12,"meteor-ordered-dict":13,"meteor-random-window-crypto":14,"meteor-reactive-object-map":15,"meteor-reactive-var":16,"meteor-spacebars":18,"meteor-spacebars-compiler":17,"meteor-templating":19,"meteor-tracker":20}],4:[function(require,module,exports){
+},{"meteor-base64":3,"meteor-blaze":5,"meteor-blaze-tools":4,"meteor-core":6,"meteor-ejson-safe":7,"meteor-html-tools":8,"meteor-htmljs":9,"meteor-id-map":10,"meteor-observe-sequence":11,"meteor-ordered-dict":12,"meteor-random-window-crypto":13,"meteor-reactive-object-map":14,"meteor-reactive-var":15,"meteor-spacebars":17,"meteor-spacebars-compiler":16,"meteor-templating":18,"meteor-tracker":19}],3:[function(require,module,exports){
 module.exports=function(Meteor) {
   var Base64;
 // Base 64 encoding
@@ -398,7 +395,7 @@ Base64.decode = function (str) {
   Meteor.Base64 = Base64;
 };
 
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var HTML = Meteor.HTML;
@@ -743,7 +740,7 @@ BlazeTools.parseStringLiteral = function (scanner) {
   Meteor.BlazeTools = BlazeTools;
 };
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = function(Meteor,jQuery) {
   var _ = Meteor.underscore;
   var HTML = Meteor.HTML;
@@ -4000,7 +3997,7 @@ Template.registerHelper = Blaze.registerHelper;
   Meteor.jQuery = jQuery;
 };
 
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 module.exports = function(underscore) {
   var Meteor;
   var _ = underscore; 
@@ -4680,7 +4677,7 @@ Meteor._setImmediate =
   return Meteor;
 };
 
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 module.exports=function(Meteor) {
   var _ = Meteor.underscore;
   var Base64 = Meteor.Base64
@@ -5198,7 +5195,7 @@ EJSON.newBinary = Base64.newBinary;
   Meteor.EJSON = EJSON;
 };
 
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 module.exports = function(Meteor) {
   var HTML = Meteor.HTML;
   var HTMLTools;
@@ -8652,7 +8649,7 @@ var parseAttrs = function (attrs) {
   Meteor.HTMLTools = HTMLTools;
 };
 
-},{}],10:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var HTML;
@@ -9254,7 +9251,7 @@ HTML.toText = function (content, textMode) {
   Meteor.HTML = HTML;
 };
 
-},{}],11:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var IdMap;
@@ -9338,7 +9335,7 @@ _.extend(IdMap.prototype, {
   Meteor.IdMap = IdMap;
 };
 
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var Random = Meteor.Random;
@@ -10056,7 +10053,7 @@ seqChangedToCursor = function (lastSeqArray, cursor, callbacks) {
   Meteor.ObserveSequence = ObserveSequence;
 };
 
-},{}],13:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var OrderedDict;
@@ -10272,7 +10269,7 @@ OrderedDict.BREAK = {"break": true};
   Meteor.OrderedDict = OrderedDict;
 };
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 module.exports=function(Meteor) {
   var _ = Meteor.underscore;
   var Random;
@@ -10497,7 +10494,7 @@ Random.createWithSeeds = function () {
   Meteor.Random = Random;
 };
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 module.exports = function(Meteor) {
 	var _ = Meteor.underscore;
 	var Tracker = Meteor.Tracker;
@@ -10614,7 +10611,7 @@ module.exports = function(Meteor) {
 	module.exports = ReactiveObjectMap;
 };
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 module.exports = function(Meteor) {
 var Tracker = Meteor.Tracker;
 var ReactiveVar;
@@ -10717,7 +10714,7 @@ ReactiveVar.prototype._numListeners = function() {
   Meteor.ReactiveVar = ReactiveVar;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var HTML = Meteor.HTML;
@@ -11831,7 +11828,7 @@ SpacebarsCompiler._beautify = function (code) {
   Meteor.SpacebarsCompiler = SpacebarsCompiler;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 module.exports = function(Meteor) {
 var HTML = Meteor.HTML;
 var Tracker = Meteor.Tracker;
@@ -12135,7 +12132,7 @@ Spacebars.TemplateWith = Blaze._TemplateWith;
   Meteor.Spacebars = Spacebars;
 };
 
-},{}],19:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 module.exports = function(Meteor) {
   var _ = Meteor.underscore;
   var Blaze = Meteor.Blaze;
@@ -12224,7 +12221,7 @@ Template.__body__.__instantiate = Template.body.renderToDocument;
   Meteor.Template = Template;
 };
 
-},{}],20:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 module.exports = function(Meteor) {
   var Tracker;
 /////////////////////////////////////////////////////
