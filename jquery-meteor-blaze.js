@@ -142,17 +142,17 @@ module.exports = function(jQuery, underscore) {
 					//Return the reactive values as array
 					return reactive.values();
 				};
-			else if (reactive.values)
-				//Set hepler
-				helper[key] = function() {
-					//Return the reactive values as array
-					return reactive.values();
-				};
 			else if (reactive.get)
 				//Set hepler
 				helper[key] = function() {
 					//Return the reactive var
 					return reactive.get();
+				};
+			else if (reactive.values)
+				//Set hepler
+				helper[key] = function() {
+					//Return the reactive values as array
+					return reactive.values();
 				};
 			else
 				//Error
