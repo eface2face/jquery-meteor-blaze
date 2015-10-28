@@ -200,7 +200,7 @@ module.exports = function(jQuery, underscore) {
 			var helper = {};
 			//Set functionhepler
 			helper[key] = function() {
-					return jquery.Meteor.Tracker.nonreactive(function() {
+					return jQuery.Meteor.Tracker.nonreactive(function() {
 						var h = {}, k;
 						//Create new template
 						var include = new jQuery.Meteor.Blaze.Template(obj.id + "." + key, renderer);
