@@ -149,7 +149,7 @@ It will create a helper function that returns a template instance with the assoc
 
 	 $(".list").blaze(templates['list'])
 		.includes('item',templates['item'])
-		.helper('item.foo', function() {
+		.helpers('item.foo', function() {
 			return 'bar';
 		})
 		.render({..});
